@@ -19,6 +19,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	 "time"
+	 "encoding/binary"
+
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -60,6 +63,8 @@ func (t *SimpleChaincode) Invoke(stub *shim.ChaincodeStub, function string, args
 		return t.Init(stub, "init", args)
 	} else if function == "write" {
         return t.write(stub, args)
+    } else if function == "write2" {
+        return t.write2(stub, args)
     }
     
 	fmt.Println("invoke did not find func: " + function)					//error
@@ -92,6 +97,30 @@ func (t *SimpleChaincode) write(stub *shim.ChaincodeStub, args []string) ([]byte
     name = args[0]                            //rename for fun
     value = args[1]
     err = stub.PutState(name, []byte(value))  //write the variable into the chaincode state
+    if err != nil {
+        return nil, err
+    }
+    return nil, nil
+}
+
+func (t *SimpleChaincode) write2(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
+
+    var err error
+    fmt.Println("running write()")
+
+    if len(args) != 2 {
+        return nil, errors.New("Incorrect number of arguments. Expecting 2. name of the variable and value to set")
+    }
+
+    name := args[0]                            //rename for fun
+	
+	nanos := time.Now().UnixNano() 
+	
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, uint64(nanos))
+
+	
+    err = stub.PutState(name, bytes)  //write the variable into the chaincode state
     if err != nil {
         return nil, err
     }
